@@ -20,7 +20,7 @@ try:
     # Removed in Python 3
     from cStringIO import StringIO
 except ImportError:
-    from io import StringIO
+    from io import StringIO, TextIOWrapper
 
 if sys.version_info[0] >= 3:
     unicode=str
@@ -47,15 +47,15 @@ class _DelegateIO(object):
         return getattr(self._captured, attr)
 
 
-#def testcase_name(test_method):
-#    testcase = type(test_method)
-#
-#    # Ignore module name if it is '__main__'
-#    module = testcase.__module__ + '.'
-#    if module == '__main__.':
-#        module = ''
-#    result = module + testcase.__name__
-#    return result
+def testcase_name(test_method):
+    testcase = type(test_method)
+
+    # Ignore module name if it is '__main__'
+    module = testcase.__module__ + '.'
+    if module == '__main__.':
+        module = ''
+    result = module + testcase.__name__
+    return result
 
 
 class _TestInfo(object):
@@ -181,8 +181,8 @@ class _XMLTestResult(_TextTestResult):
         """
         Called when a test method fails.
         """
-        testinfo = _TestInfo(self, test, _TestInfo.FAILURE, err)
-        self.failures.append((
+        testinfo = _TestInfo(self, test, _TestInfo.ERROR, err)
+        self.errors.append((
             testinfo,
             self._exc_info_to_string(err, test)
         ))
@@ -278,10 +278,14 @@ class _XMLTestResult(_TextTestResult):
         testcase = xml_document.createElement('testcase')
         xml_testsuite.appendChild(testcase)
 
-        testcase.setAttribute('classname', suite_name)
-        testcase.setAttribute(
-            'name', _XMLTestResult._test_method_name(test_result.test_id)
-        )
+        test_method_name = _XMLTestResult._test_method_name(test_result.test_id)
+
+        if test_method_name != 'runTest':
+            testcase.setAttribute('classname', suite_name)
+            testcase.setAttribute('name', test_method_name)
+        else:
+            testcase.setAttribute('name', suite_name)
+
         testcase.setAttribute('time', '%.3f' % test_result.elapsed_time)
 
         if (test_result.outcome != _TestInfo.SUCCESS):
@@ -330,39 +334,29 @@ class _XMLTestResult(_TextTestResult):
                 os.path.exists(test_runner.output)):
             os.makedirs(test_runner.output)
 
-        for suite, tests in all_results.items():
-            doc = Document()
+        # Build the XML file
+        doc = Document()
+        testsuite = _XMLTestResult._report_testsuite(
+            'run', test_runner.outsuffix, [], doc
+        )
 
-            # Build the XML file
-            testsuite = _XMLTestResult._report_testsuite(
-                suite, test_runner.outsuffix, tests, doc
-            )
+        for suite, tests in all_results.items():
             for test in tests:
                 _XMLTestResult._report_testcase(suite, test, testsuite, doc)
-            _XMLTestResult._report_output(test_runner, testsuite, doc)
-            xml_content = doc.toprettyxml(indent='\t')
 
-            if type(test_runner.output) is str:
-                report_file = codecs.open(
-                    '%s%sTEST-%s-%s.xml' % (
-                        test_runner.output, os.sep, suite,
-                        test_runner.outsuffix
-                    ), 'w', 'utf-8'
-                )
-                try:
-                    report_file.write(xml_content)
-                finally:
-                    report_file.close()
-            else:
-                # Assume that test_runner.output is a stream
-                test_runner.output.write(xml_content)
+        _XMLTestResult._report_output(test_runner, testsuite, doc)
+
+        xml_content = doc.toprettyxml(indent='\t')
+        xml_content_cleaned = xml_content.replace('\'', '').replace('\"', '')
+
+        test_runner.output.write(xml_content_cleaned)
 
 
 class XMLTestRunner(TextTestRunner):
     """
     A test runner class that outputs the results in JUnit like XML files.
     """
-    def __init__(self, output='.', outsuffix=None, stream=sys.stderr,
+    def __init__(self, output: TextIOWrapper, outsuffix=None, stream=sys.stderr,
                  descriptions=True, verbosity=1, elapsed_times=True):
         TextTestRunner.__init__(self, stream, descriptions, verbosity)
         self.verbosity = verbosity
