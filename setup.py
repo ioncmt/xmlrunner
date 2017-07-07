@@ -26,9 +26,8 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Software Development :: Testing'
     ],
-    packages=['xmlrunner', 'xmlrunner.tests', 'xmlrunner.extra'],
+    packages=['xmlrunner'],
     provides=['xmlrunner'],
     zip_safe=True,
-    include_package_data=True,
-    test_suite='xmlrunner.tests.test_xmlrunner'
+    include_package_data=True
 )
