@@ -1,88 +1,60 @@
-# unittest-xml-reporting
+# xmlrunner
 
-unittest-xml-reporting is a unittest test runner that can save test results
-to XML files that can be consumed by a wide range of tools, such as build
-systems, IDEs and continuous integration servers.
+A unittest test runner that can save test results to XML files adhering to the JUnit Report
+Structure and therefore can be consumed by a wide range of tools, such as build systems, IDEs,
+continuous integration servers and Confluence.
 
 If you find a bug the best way to have it fixed is to fix it yourself and to make a pull request.
 
-If you want you can even get direct access to the repository, is always better to have more than one maintainer.
+
+## Features
+
+- Writes the whole report into a single XML file
+- Flattens the structure to contain only one test suite (to achieve compatibility with the standard
+Confluence JUnit Report Macro)
+- Removes `'` and `"` from the report file (to achieve compatibility with the standard Confluence
+JUnit Report Macro)
+- Pipes `print()` output to the commandline _and_ the report file
+
 
 ## Requirements
 
-* Python 2.7+
+- Python 3.5+
+
 
 ## Installation
 
-The easiest way to install unittest-xml-reporting is via
-[Pip](http://www.pip-installer.org):
+To get the latest version: Clone this repository and then run
 
 ````bash
-$ pip install unittest-xml-reporting
-````
-
-If you use Git and want to get the latest *development* version:
-
-````bash
-$ git clone git://github.com/danielfm/unittest-xml-reporting.git
-$ cd unittest-xml-reporting
-$ sudo python setup.py install
-````
-
-Or get the latest *development* version as a tarball:
-
-````bash
-$ wget http://github.com/danielfm/unittest-xml-reporting/tarball/master
-$ tar zxf danielfm-unittest-xml-reporting-XXXXXXXXXXXXXXXX.tar.gz
-$ cd danielfm-unittest-xml-reporting-XXXXXXXXXXXXXXXX
+$ cd xmlrunner
 $ sudo python setup.py install
 ````
 
 ## Usage
 
-The script below, adapted from the
-[unittest](http://docs.python.org/library/unittest.html), shows how to use
-`XMLTestRunner` in a very simple way. In fact, the only difference between
-this script and the original one is the last line:
+Write the rest of your Testing Setup as usual using python's unittest.
+
+Then finish it up with a code block like in the following example:
 
 ````python
-import random
-import unittest
-import xmlrunner
+date_formatted = datetime.datetime.now().strftime('%Y-%d-%m_%H-%M-%S')
 
-class TestSequenceFunctions(unittest.TestCase):
+path_to_xml = os.path.abspath(os.path.join(
+    os.path.dirname(__file__),
+    '_reports/report_%s.xml'%(date_formatted)
+))
+os.makedirs(os.path.dirname(path_to_xml), exist_ok=True)
 
-    def setUp(self):
-        self.seq = list(range(10))
-
-    @unittest.skip("demonstrating skipping")
-    def test_skipped(self):
-        self.fail("shouldn't happen")
-
-    def test_shuffle(self):
-        # make sure the shuffled sequence does not lose any elements
-        random.shuffle(self.seq)
-        self.seq.sort()
-        self.assertEqual(self.seq, list(range(10)))
-
-        # should raise an exception for an immutable sequence
-        self.assertRaises(TypeError, random.shuffle, (1,2,3))
-
-    def test_choice(self):
-        element = random.choice(self.seq)
-        self.assertTrue(element in self.seq)
-
-    def test_sample(self):
-        with self.assertRaises(ValueError):
-            random.sample(self.seq, 20)
-        for element in random.sample(self.seq, 5):
-            self.assertTrue(element in self.seq)
-
-if __name__ == '__main__':
-    unittest.main(testRunner=xmlrunner.XMLTestRunner(output='test-reports'))
+with open(path_to_xml, 'w') as file_output:
+    xml_runner = xmlrunner.XMLTestRunner(
+        output=file_output
+    )
+    result = xml_runner.run(main_test_suite)
 ````
 
-### Django
+
+### Together with Django
 
 In order to plug `XMLTestRunner` to a Django project, add the following
 to your `settings.py`:
