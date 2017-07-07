@@ -274,7 +274,9 @@ class _XMLTestResult(_TextTestResult):
                 failure.setAttribute('type', test_result.err[0].__name__)
                 failure.setAttribute('message', str(test_result.err[1]))
                 error_info = str(test_result.get_error_info())
-                failure_text = xml_document.createCDATASection(error_info)
+                error_info_cleaned = error_info.replace('\'', '').replace('\"', '')
+                # Confluence escapes these characters in a very wired way otherwise
+                failure_text = xml_document.createCDATASection(error_info_cleaned)
                 failure.appendChild(failure_text)
             else:
                 failure.setAttribute('type', 'skip')
@@ -320,9 +322,7 @@ class _XMLTestResult(_TextTestResult):
         _XMLTestResult._report_output(test_runner, testsuite, doc)
 
         xml_content = doc.toprettyxml(indent='\t')
-        xml_content_cleaned = xml_content.replace('\'', '').replace('\"', '')
-
-        test_runner.output.write(xml_content_cleaned)
+        test_runner.output.write(xml_content)
 
 
 class XMLTestRunner(TextTestRunner):
