@@ -11,23 +11,6 @@ uninstall:
 pep8:
 	py.test --pep8 -m pep8
 
-test:
-	pip install --user -r requirements.txt
-	#pip install --user -r requirements-dev.txt
-	python -m tox
-
-#tox:
-#	pip install tox detox
-#	detox
-
-coverage:
-	pip install coverage
-	travis
-
-travis:
-	pip install coveralls
-	coverage run --source=python3-ldap runtests.py
-
 pypi:
 	python setup.py check --restructuredtext --strict
 	python setup.py sdist upload
