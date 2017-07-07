@@ -8,21 +8,9 @@ default TextTestRunner.
 import sys
 import time
 
-try:
-    from unittest2.runner import TextTestRunner
-    from unittest2.runner import TextTestResult as _TextTestResult
-    from unittest2.result import TestResult
-except ImportError:
-    from unittest import TestResult, _TextTestResult, TextTestRunner
+from unittest import TestResult, _TextTestResult, TextTestRunner
 
-try:
-    # Removed in Python 3
-    from cStringIO import StringIO
-except ImportError:
-    from io import StringIO, TextIOWrapper
-
-if sys.version_info[0] >= 3:
-    unicode = str
+from io import StringIO, TextIOWrapper
 
 
 class _DelegateIO(object):
@@ -84,7 +72,8 @@ class _TestInfo(object):
         return self.test_method.id()
 
     def test_finished(self):
-        """Save info that can only be calculated once a test has run.
+        """
+        Save info that can only be calculated once a test has run.
         """
         self.elapsed_time = \
             self.test_result.stop_time - self.test_result.start_time
@@ -127,7 +116,8 @@ class _XMLTestResult(_TextTestResult):
         target_list.append(test_info)
 
         def callback():
-            """Prints the test method outcome to the stream, as well as
+            """
+            Prints the test method outcome to the stream, as well as
             the elapsed time.
             """
 
@@ -292,8 +282,8 @@ class _XMLTestResult(_TextTestResult):
             testcase.appendChild(failure)
             if test_result.outcome != _TestInfo.SKIP:
                 failure.setAttribute('type', test_result.err[0].__name__)
-                failure.setAttribute('message', unicode(test_result.err[1]))  # don't use str(), breaks on py2
-                error_info = unicode(test_result.get_error_info())
+                failure.setAttribute('message', str(test_result.err[1]))
+                error_info = str(test_result.get_error_info())
                 failure_text = xml_document.createCDATASection(error_info)
                 failure.appendChild(failure_text)
             else:
