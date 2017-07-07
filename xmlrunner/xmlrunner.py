@@ -236,16 +236,6 @@ class _XMLTestResult(_TextTestResult):
         xml_document.appendChild(testsuite)
 
         testsuite.setAttribute('name', "%s-%s" % (suite_name, outsuffix))
-        testsuite.setAttribute('tests', str(len(tests)))
-
-        testsuite.setAttribute(
-            'time', '%.3f' % sum(map(lambda e: e.elapsed_time, tests))
-        )
-        failures = filter(lambda e: e.outcome == _TestInfo.FAILURE, tests)
-        testsuite.setAttribute('failures', str(len(list(failures))))
-
-        errors = filter(lambda e: e.outcome == _TestInfo.ERROR, tests)
-        testsuite.setAttribute('errors', str(len(list(errors))))
 
         return testsuite
 
