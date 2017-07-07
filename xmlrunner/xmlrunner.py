@@ -5,10 +5,9 @@ This module provides the XMLTestRunner class, which is heavily based on the
 default TextTestRunner.
 """
 
-import os
 import sys
 import time
-import codecs
+
 try:
     from unittest2.runner import TextTestRunner
     from unittest2.runner import TextTestResult as _TextTestResult
@@ -23,10 +22,7 @@ except ImportError:
     from io import StringIO, TextIOWrapper
 
 if sys.version_info[0] >= 3:
-    unicode=str
-
-# Allow version to be detected at runtime.
-from .version import __version__, __version_info__
+    unicode = str
 
 
 class _DelegateIO(object):
@@ -119,6 +115,8 @@ class _XMLTestResult(_TextTestResult):
         self.successes = []
         self.callback = None
         self.elapsed_times = elapsed_times
+        self.start_time = None
+        self.stop_time = None
 
     def _prepare_callback(self, test_info, target_list, verbose_str,
                           short_str):
@@ -234,7 +232,7 @@ class _XMLTestResult(_TextTestResult):
                     # This is a skipped, error or a failure test case
                     test_info = test_info[0]
                 testcase_name = test_info.test_name
-                if not testcase_name in tests_by_testcase:
+                if testcase_name not in tests_by_testcase:
                     tests_by_testcase[testcase_name] = []
                 tests_by_testcase[testcase_name].append(test_info)
 
@@ -288,7 +286,7 @@ class _XMLTestResult(_TextTestResult):
 
         testcase.setAttribute('time', '%.3f' % test_result.elapsed_time)
 
-        if (test_result.outcome != _TestInfo.SUCCESS):
+        if test_result.outcome != _TestInfo.SUCCESS:
             elem_name = ('failure', 'error', 'skipped')[test_result.outcome - 1]
             failure = xml_document.createElement(elem_name)
             testcase.appendChild(failure)
@@ -296,12 +294,11 @@ class _XMLTestResult(_TextTestResult):
                 failure.setAttribute('type', test_result.err[0].__name__)
                 failure.setAttribute('message', unicode(test_result.err[1]))  # don't use str(), breaks on py2
                 error_info = unicode(test_result.get_error_info())
-                failureText = xml_document.createCDATASection(error_info)
-                failure.appendChild(failureText)
+                failure_text = xml_document.createCDATASection(error_info)
+                failure.appendChild(failure_text)
             else:
                 failure.setAttribute('type', 'skip')
                 failure.setAttribute('message', test_result.err)
-
 
     _report_testcase = staticmethod(_report_testcase)
 
@@ -329,10 +326,6 @@ class _XMLTestResult(_TextTestResult):
         """
         from xml.dom.minidom import Document
         all_results = self._get_info_by_testcase(test_runner.outsuffix)
-
-        if (isinstance(test_runner.output, str) and not
-                os.path.exists(test_runner.output)):
-            os.makedirs(test_runner.output)
 
         # Build the XML file
         doc = Document()
@@ -420,7 +413,7 @@ class XMLTestRunner(TextTestRunner):
             )
             self.stream.writeln()
 
-            expectedFails = unexpectedSuccesses = skipped = 0
+            expected_fails = unexpected_successes = skipped = 0
             try:
                 results = map(len, (result.expectedFailures,
                                     result.unexpectedSuccesses,
@@ -428,7 +421,7 @@ class XMLTestRunner(TextTestRunner):
             except AttributeError:
                 pass
             else:
-                expectedFails, unexpectedSuccesses, skipped = results
+                expected_fails, unexpected_successes, skipped = results
 
             # Error traces
             infos = []
@@ -444,10 +437,10 @@ class XMLTestRunner(TextTestRunner):
 
             if skipped:
                 infos.append("skipped={0}".format(skipped))
-            if expectedFails:
-                infos.append("expected failures={0}".format(expectedFails))
-            if unexpectedSuccesses:
-                infos.append("unexpected successes={0}".format(unexpectedSuccesses))
+            if expected_fails:
+                infos.append("expected failures={0}".format(expected_fails))
+            if unexpected_successes:
+                infos.append("unexpected successes={0}".format(unexpected_successes))
 
             if infos:
                 self.stream.writeln(" ({0})".format(", ".join(infos)))
